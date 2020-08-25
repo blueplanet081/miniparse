@@ -8,11 +8,17 @@ ops = {'a': mp.Oset(False, False, 'comment for a'),
        'verbose': mp.Oset(False, True, '静かにね'),
        }
 
-mp.printpms(ops)
+mp.printOset(ops)
 
-mp.miniparse(sys.argv[1:], ops)
 
-mp.printpms(ops)
+myArgs = mp.Args(sys.argv[1:])
+mp.miniparse(myArgs, ops, 1)
+
+mp.printOset(ops)
+print(myArgs.remainArgs())
+
+for i, p in enumerate(mp.params()):
+    print(i, p)
 
 if ops['l'].isTrue:
     print('オプション <l> はあり')
