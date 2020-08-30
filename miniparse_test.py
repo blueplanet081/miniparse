@@ -1,26 +1,48 @@
 import sys
 import miniparse as mp
 
-mp.partial_mode = mp.PARTIAL
+mp.partial_mode = mp.Pmode.PARTIAL
+mp.usage_mode = mp.Umode.USAGE_AND_OPTION
 mp.error_code = 1
 
-myops = {'a': mp.Oset(False, False, 'comment for a'),
-         'L': mp.Oset(False, True, 'Lのコメント'),
-         'f': mp.Oset(False, False, 'これがfです'),
-         'l': mp.Oset(False, False, 'これがlです'),
-         'verbose': mp.Oset(False, True, '静かにね'),
-         }
-
-mp.printOset(myops)
+ops = {'': mp.Oset(False, False, 'ディレクトリ', ''),
+       'a': mp.Oset(False, False, '', 'comment for a'),
+       'L': mp.Oset(False, True, '階層数', 'Lのコメント'),
+       'f': mp.Oset(False, False, '', 'これがfです'),
+       'l': mp.Oset(False, False, '', 'これがlです'),
+       'h': mp.Oset(False, False, '', '使い方を表示'),
+       'verbose': mp.Oset(False, True, 'あれの長さ', '静かにね'),
+       }
 
 myArgs = mp.Args(sys.argv)
-print('command = ', myArgs.getCommandPath())
+err = mp.miniparse(myArgs, ops)
 
-while not myArgs.isAllEnd():
-    err = mp.miniparse(myArgs, myops)
+if ops['h'].isTrue:
+    print('このプログラムは、モジュール miniparse の使い方を示すものです。')
+    mp.printUsage(myArgs.getCommandName(), ops, mp.Umode.USAGE_AND_OPTION)
 
-    mp.printOset(myops)
-    print(myArgs.remainArgs())
+print()
+print('----')
+mp.printOset(ops)
 
-for i, p in enumerate(mp.params()):
-    print(i, p)
+print('----')
+
+if err:
+    print('コマンドライン中にエラーがありました。')
+    print(mp.Eset.Errmsg(err))
+
+for p in ops:
+    if len(p) == 1 and ops[p].isTrue:
+        if ops[p].opArg:
+            print(f'option -{p} {ops[p].opArg} が指定されました。')
+        else:
+            print(f'option -{p} が指定されました。')
+    elif len(p) > 1 and ops[p].isTrue:
+        if ops[p].opArg:
+            print(f'option --{p}={ops[p].opArg} が指定されました。')
+        else:
+            print(f'option --{p} が指定されました。')
+
+print()
+print(f'コマンドラインアーギュメントとして、{mp.arguments()} が指定されました。')
+print(f'残りのコマンドラインは {myArgs.getRemainArgs()} です。')
