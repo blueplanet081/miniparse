@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
     ptree プロトタイプ版
     2020/08/21 by te.
