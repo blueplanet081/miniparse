@@ -110,7 +110,7 @@ args = mp.arguments()
 if args:
     path = pathlib.Path(args[0])
     if not path.is_dir():
-        print(f'ディレクトリが存在しません {path}', file=sys.stderr)
+        print(f'無効なディレクトリです {path}', file=sys.stderr)
         sys.exit(1)
 
 else:
