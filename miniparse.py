@@ -2,10 +2,13 @@ from typing import TextIO, Union, List, Dict, Tuple, Optional
 import sys
 import pathlib
 from enum import Enum
+import platform
+import glob
+
 '''
 miniparse.py コマンドライン解析モジュール
-version 0.5ぐらい
-2020/8/27 by te.
+version 0.6ぐらい
+2020/9/1 by te.
 '''
 
 ''' <:=>は外したので、Python 3.7 でも動きます。それより前は試していません。 '''
@@ -51,6 +54,9 @@ usage_mode: Umode = Umode.USAGE_AND_OPTION      # noqa
 error_code = 1
 # エラーメッセージ出力先
 error_output: TextIO = sys.stderr
+
+# アーギュメント展開用にシステム判定
+isWin = True if platform.system() == 'Windows' else False
 
 
 # -------------------------------------------------------------
@@ -188,11 +194,46 @@ Es = {'E0': Eset("Command argument expected"),
 class Args():
     ''' コマンドライン解析用class
     '''
+    @staticmethod
+    def getWild(wild: str) -> List[str]:
+        ''' ホームディレクトリ '~'、ワイルドカードを展開して、リストで返す。
+            頭にハイフンが付いているもの、ワイルドカードに展開できないものはそのまま返す
+            （その時は、文字列が一つのリストになる）
+        '''
+        ret = []
+        if wild.startswith('-'):
+            ret.append(wild)
+            return ret
+        if wild.startswith('~'):
+            wild = str(pathlib.Path.home()) + wild[1:]
+            print(wild)
+
+        if '*' in wild or '?' in wild or ('[' in wild and len(wild) > 1):
+            for w in glob.glob(wild):
+                ret.append(w)
+            if not ret:
+                ret.append(wild)
+        else:
+            ret.append(wild)
+        return ret
+
+    @staticmethod
+    def wildArgs(__args: List[str]) -> List[str]:
+        ''' 渡されたリスト中の項目を、ワイルドカード展開する
+        '''
+        ret = []
+        for p in __args:
+            ret += Args.getWild(p)
+        return ret
+
     def __init__(self, args: List[str]):
         ''' コマンドライン解析用インスタンスを作成
         '''
         self.__cmdPath = args[0]    # コマンドパス名
-        self.__args = args[1:]      # 解析用コマンドパラメータ
+        if isWin:
+            self.__args = Args.wildArgs(args[1:])    # 解析用コマンドパラメータ
+        else:
+            self.__args = args[1:]              # 解析用コマンドパラメータ
         self.__num = 0              # 解析中ブロックポインタ
         self.__pos = 0              # 解析中ブロック内ポインタ
 
