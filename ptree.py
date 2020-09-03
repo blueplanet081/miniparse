@@ -96,13 +96,13 @@ ops = {'': mp.Oset(False, False, '[ディレクトリ]', ''),
        'h': mp.Oset(False, False, '', '使い方を表示'),
        }
 
-myArgs = mp.Args(sys.argv)
-mp.miniparse(myArgs, ops)
+myArgs = mp.wArgs(sys.argv)
+mp.miniparse(myArgs[1:], ops)
 
 if ops['h'].isTrue:
     print('ディレクトリやファイルのツリーを表示します。')
     print()
-    mp.printUsage(myArgs.getCommandName(), ops, mp.Umode.USAGE_AND_OPTION)
+    mp.printUsage(myArgs[0], ops, mp.Umode.USAGE_AND_OPTION)
 
     sys.exit(0)
 
