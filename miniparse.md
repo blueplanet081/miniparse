@@ -23,7 +23,9 @@ miniparse_test.py | 古いテスト用プログラムです。見なかったこ
 バージョン   |日付     |変更箇所        | コメント 
 ------------|---------|---------------|------
 0.5くらい    |2020/8/27|               |いちおう完成
-0.6くらい    | 2020/9/1 |miniparse.py  |コマンド引数のホームディレクトリ、ワイルドカード展開を追加</br>(Windowsで使用の場合のみ)
+0.6くらい    |2020/9/1 |miniparse.py  |コマンド引数のホームディレクトリ、ワイルドカード展開を追加</br>(Windowsで使用の場合のみ)
+0.8くらい    |2020/9/3|miniparse.py   |Let's Python@facebook でアドバイスを受けて、解析部大幅変更</br>(一部機能制限暫定版)
+〃　          |〃    |ptree.py    |miniparse.py処理変更に伴って、呼び出し方一部変更
 
 
 </br>
@@ -55,8 +57,9 @@ ops = {'': mp.Oset(False, False, '[ディレクトリ]', ''),
 ２．コマンドライン引数とコマンドラインオプション情報を指定して、miniparse() を呼びます。
 
 ```py
-myArgs = mp.Args(sys.argv)
-mp.miniparse(myArgs, ops)
+# すみません、暫定版です
+myArgs = mp.wArgs(sys.argv)
+mp.miniparse(myArgs[1:], ops)
 
 ```
 
@@ -69,34 +72,6 @@ mp.miniparse(myArgs, ops)
 
 以下使用例
 ```py
-if ops['h'].isTrue:
-    print('ディレクトリやファイルのツリーを表示します。')
-    print()
-    mp.printUsage(myArgs.getCommandName(), ops, mp.Umode.USAGE_AND_OPTION)
-
-    sys.exit(0)
-
-args = mp.arguments()
-if args:
-    path = pathlib.Path(args[0])
-    if not path.is_dir():
-        print(f'無効なディレクトリです {path}', file=sys.stderr)
-        sys.exit(1)
-
-else:
-    path = pathlib.Path('.')
-
-dispTreeLevel = 0
-
-if ops['a'].isTrue:
-    dispAll = True
-if ops['d'].isTrue:
-    dispFiles = False
-if ops['E'].isTrue:
-    tMoji = 1
-
-if ops['L'].isTrue:
-    if ops['L'].opArg.isdecimal:
-        dispTreeLevel = int(ops['L'].opArg)
+# すみません、改訂中です
 
 ```
