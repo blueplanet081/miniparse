@@ -7,7 +7,7 @@ import glob
 
 '''
 miniparse.py コマンドライン解析モジュール
-version 0.9ぐらい、一部機能を外した暫定版
+version 0.8ぐらい、一部機能を外した暫定版
 2020/9/3 by te.
 '''
 
