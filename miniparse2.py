@@ -175,6 +175,13 @@ class OpSet():
         '''
         return self.op.keys()
 
+    def reset_data(self):
+        ''' 取得したデータをリセットする（使用注意！！）
+        '''
+        for key in self.get_keys():
+            self.op[key].isTrue = False
+            self.op[key].opArg = []
+
     def isExist(self, key: str) -> bool:
         ''' そのオプションが指定のオプション情報中にあるかどうか
         '''
@@ -228,7 +235,7 @@ class OpSet():
         if key in self.op:
             return self.op[key].comment
         return ''
-
+    
 
 TypeOpset = Dict[str, Oinfo]                # オプションセットのType
 
@@ -289,18 +296,17 @@ def printUsage(comName: str, ops: OpSet, umode: Umode, output: TextIO = sys.stdo
         print(make_usage(comName, ops), file=output)
     if Umode.OLIST in umode:
         print(make_plist(ops), file=output)
-    if umode.USAGE or umode.OLIST in umode:
-        print(file=error_output)
+    print('###', file=error_output)
 
 
 def printOset(ops: OpSet) -> None:
     ''' コマンドラインオプション情報の一覧を適当に表示する（デバッグ用）
     '''
-    print('option [.isTrue] .needArg [.opArg] "Argcomment" ".comment"')
-    print(ops.get_keys())
+    print('option [.isTrue] .needArg [.opArg]                       "Argcomment"    ".comment"')
     for pp in ops.get_keys():
+        str_istrue = '[True ]' if ops.isTrue(pp) else '[-----]'
         print(pp.ljust(8),
-              '[' + str(ops.isTrue(pp)).ljust(5) + ']',
+              str_istrue,
               str(ops.isNeedArg(pp)).ljust(8),
               str(ops.get_opArg(pp)).ljust(30),
               ('"' + ops.get_Argcomment(pp) + '"').ljust(15),
@@ -408,10 +414,10 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
     is_needArgBlock = False
     needArgP = ''
 
-    print(args)
+    # print(args)
 
     for i, ptype, p in getOps(args):
-        print(i, ptype, p)
+        # print(i, ptype, p)
         if is_needArgBlock:                 # オプション引数のブロック待ちだった
             if ptype == Ptype.BLOCK:            # 普通ブロック来た
                 ops._append_opArg(needArgP, p)
@@ -425,7 +431,6 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
             GLOBAL_arguments.append(p)      # コマンド引数として格納
 
             if t.checkTurn(Turn.ARG):           # ★★引数解析のターン
-                print(f'Turn to {t.getTurn()} !!')
                 yield i, t.getTurn()
 
             if ops.isExist(''):
@@ -439,7 +444,6 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
             elif ops.isExist(p):                    # オプション判定
 
                 if t.checkTurn(Turn.OPT):           # ★★引数解析のターン
-                    print(f'Turn to {t.getTurn()} !!')
                     yield i, t.getTurn()
 
                 ops._set_True(p)
@@ -463,14 +467,12 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
         elif ptype == Ptype.LOPT:           # ロングオプションブロック
 
             if t.checkTurn(Turn.OPT):           # ★★引数解析のターン
-                print(f'Turn to {t.getTurn()} !!')
                 yield i, t.getTurn()
 
             ppos = p.find('=')
             if ppos != -1:                  # 引数（option=arg）あり
                 pwork = p[ppos+1:]
                 p = p[:ppos]
-                print(p, pwork)
             else:                           # 引数なし
                 pwork = ''
             if ops.isExist(p):                    # オプション判定
@@ -525,7 +527,6 @@ def miniparse(ops: OpSet, arg: List[str, ] = []) -> bool:
 
     while not GL_iterEnd and GL_iterMP:
         p, turn = next(GL_iterMP)
-        print(p, turn, GL_args[p:])
         if p == -1:
             GL_iterEnd = True
             return True
@@ -543,7 +544,7 @@ def miniparse(ops: OpSet, arg: List[str, ] = []) -> bool:
 
 
 if __name__ == "__main__":
-    partial_mode = Pmode.WHOLE
+    partial_mode = Pmode.ARG
     usage_mode = Umode.BOTH
     error_code = 1
 
@@ -563,17 +564,36 @@ if __name__ == "__main__":
     # for i in miniparse(opp, myArgs[1:]):
     #     print(i)
 
-    partial_mode = Pmode.OPT
+    partial_mode = Pmode.ARG
     print('mini 始め')
     bb = miniparse(opp, sys.argv)
     print('mini 終わり')
     print(bb)
+    printOset(opp)
 
     while bb:
+        print()
+        for p in opp.get_keys():
+            if len(p) == 1 and opp.isTrue(p):
+                if opp.get_opArg(p):
+                    print(f'option -{p} {opp.get_opArg(p)} が指定されました。')
+                else:
+                    print(f'option -{p} が指定されました。')
+            elif len(p) > 1 and opp.isTrue(p):
+                if opp.get_opArg(p):
+                    print(f'option --{p}={opp.get_opArg(p)} が指定されました。')
+                else:
+                    print(f'option --{p} が指定されました。')
+        print()
+
+        opp.reset_data()
         print('mini 始め')
         bb = miniparse(opp)
         print('mini 終わり')
         print(bb)
+        if bb:
+            printOset(opp)
+
 
     print(usage_mode)
     if opp.isTrue('h'):
@@ -587,22 +607,6 @@ if __name__ == "__main__":
     print('----')
     print(make_usage("", opp))
     print(make_plist(opp))
-
-    # if err:
-    #     print('コマンドライン中にエラーがありました。')
-    #     print(Eset.Errmsg(err))
-
-    for p in opp.get_keys():
-        if len(p) == 1 and opp.isTrue(p):
-            if opp.get_opArg(p):
-                print(f'option -{p} {opp.get_opArg(p)} が指定されました。')
-            else:
-                print(f'option -{p} が指定されました。')
-        elif len(p) > 1 and opp.isTrue(p):
-            if opp.get_opArg(p):
-                print(f'option --{p}={opp.get_opArg(p)} が指定されました。')
-            else:
-                print(f'option --{p} が指定されました。')
 
     print()
     print(f'コマンドラインアーギュメントとして、{arguments()} が指定されました。')
