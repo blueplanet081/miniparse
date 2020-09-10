@@ -187,6 +187,20 @@ class OpSet():
         '''
         return key in self.op
 
+    def _get_Longoption(self, key: str) -> str:
+        ''' 入力に一致するロングオプションkeyを取得する。無ければそのまま。
+            （一意に判定できる省略形を許容する）
+        '''
+        if key[1:2] and key in self.op.keys():          # 2文字以上で完全一致
+            return key
+        keep = ''
+        for lk in [k for k in self.op.keys() if k[1:2]]:
+            if key in lk:                               # 省略形だった
+                if keep:                                     # 一意で無かった
+                    return key
+                keep = lk                                    # 完全形をキープ
+        return keep if keep else key    # 見つかったらそれ、でなければ入力のkey
+
     def _set_True(self, key: str) -> bool:
         ''' そのオプションが指定（入力）されたことをセットする
         '''
@@ -245,7 +259,7 @@ def make_usage(comName: str, ops: OpSet) -> str:
         comNameが空文字列の時は、内部で確保しているコマンド名を使用する
     '''
     if not comName:
-        comName = pathlib.Path(GL_commandPath).name
+        comName = pathlib.Path(GLOBAL_commandPath).name
     pstr = f'usage: {comName} '             # コマンド名
     p1s = [p for p in ops.get_keys() if len(p) == 1 and not ops.isNeedArg(p)]
     if p1s:                                 # 1文字オプション（引数なし）
@@ -296,7 +310,7 @@ def printUsage(comName: str, ops: OpSet, umode: Umode, output: TextIO = sys.stdo
         print(make_usage(comName, ops), file=output)
     if Umode.OLIST in umode:
         print(make_plist(ops), file=output)
-    print('###', file=error_output)
+    print(file=error_output)
 
 
 def printOset(ops: OpSet) -> None:
@@ -366,7 +380,7 @@ def getOps(__args: List[str]) -> Iterator[Tuple[int, Ptype, str]]:
             yield i, Ptype.BLOCK, ob
         elif ob.startswith('--'):           # ロングオプションブロック
             yield i, Ptype.LOPT, ob[2:]
-        elif ob.startswith('-'):            # ショートオプションブロック
+        elif ob.startswith('-') and ob[1:]:            # ショートオプションブロック
             sblock = ob[1:]
             for pp in sblock:               # 分解されたショートオプション
                 yield i, Ptype.SOPT, pp
@@ -386,13 +400,6 @@ def arguments() -> List[str]:   # noqa
     return GLOBAL_arguments
 
 
-GLOBAL_argpos: int = 0          # 解析途中の args のポジション
-def argpos() -> int:            # noqa
-    ''' 解析途中の args のポジション
-    '''
-    return GLOBAL_argpos
-
-
 TypeParseError = Optional[Tuple[str, ...]]     # エラーType
 GLOBAL_err: TypeParseError = None       # オプションエラー格納用
 
@@ -405,7 +412,6 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
     ''' コマンドライン解析用モジュール
     '''
     global GLOBAL_arguments             # 取得したパラメータの格納用
-    global GLOBAL_argpos                # 解析途中の args のポジション
     global GLOBAL_err                   # オプションエラー格納用
 
     t = CheckTurn()     # オプション解析中(Turn.OPT)、引数解析中（Turn.ARG）
@@ -458,9 +464,9 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
         elif ptype == Ptype.SSEP:           # ショートオプションブロックの終わり
             if is_needArg:                  # オプション引数待ち
                 w_oparg = p[p.find(needArgP)+1:]
+                is_needArg = False
                 if w_oparg:                 # オプション引数あった
                     ops._append_opArg(needArgP, w_oparg)
-                    is_needArg = False
                 else:
                     is_needArgBlock = True
 
@@ -475,15 +481,17 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
                 p = p[:ppos]
             else:                           # 引数なし
                 pwork = ''
-            if ops.isExist(p):                    # オプション判定
+
+            p = ops._get_Longoption(p)      # 一致するロングオプションkeyを取得
+            if ops.isExist(p):              # オプション判定
                 ops._set_True(p)
                 if pwork:
                     ops._append_opArg(p, pwork)
-                elif ops.isNeedArg(p):  # オプション引数必要
+                elif ops.isNeedArg(p):          # オプション引数必要
                     is_needArgBlock = True
                     needArgP = p
             else:                           # Unknown option
-                GLOBAL_err = ('E1', p)     # E1: Unknown option: -<p>
+                GLOBAL_err = ('E1', p)      # E1: Unknown option: -<p>
                 break
 
     if not GLOBAL_err:     # 今までエラーが無くて、
@@ -501,35 +509,50 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
     yield -1, None
 
 
-GL_iterMP = None
-GL_iterEnd = False
+# -------------------------------------------------------------
+# コマンドライン解析モジュール・フロントエンド部
+# -------------------------------------------------------------
 
-GL_commandPath = ''
-GL_args = []
+GLOBAL_iterMP = None            # イテレータ(miniparse_0)呼び出し用
+GLOBAL_iterEnd = False          # イテレータ(miniparse_0)終了フラグ
+
+GLOBAL_commandPath = ''         # コマンドpath 退避用
+GLOBAL_args = []                # 解析中コマンドライン退避用
+GLOBAL_pos = 0                  # 解析中のコマンドライン（リスト）位置
+
+
+def get_remainArgs() -> List[str]:
+    ''' 解析中の残りのコマンドラインを取得する
+    '''
+    if GLOBAL_pos == -1:
+        return []
+    return GLOBAL_args[GLOBAL_pos:]
 
 
 def miniparse(ops: OpSet, arg: List[str, ] = []) -> bool:
     ''' コマンドライン解析モジュール・フロントエンド
     '''
-    global GL_iterMP
-    global GL_iterEnd
-    global GL_commandPath
-    global GL_args
+    global GLOBAL_iterMP
+    global GLOBAL_iterEnd
+    global GLOBAL_commandPath
+    global GLOBAL_args
+    global GLOBAL_pos
 
     if arg:
-        GL_commandPath = arg[0]
+        GLOBAL_commandPath = arg[0]
         arg = arg[1:]
         if isWin:
             arg = wArgs(arg)
 
-        GL_args = arg
-        GL_iterMP = miniparse_0(ops, GL_args)
+        GLOBAL_args = arg
+        GLOBAL_iterMP = miniparse_0(ops, GLOBAL_args)
 
-    while not GL_iterEnd and GL_iterMP:
-        p, turn = next(GL_iterMP)
-        if p == -1:
-            GL_iterEnd = True
-            return True
+    while not GLOBAL_iterEnd and GLOBAL_iterMP:
+        GLOBAL_pos, turn = next(GLOBAL_iterMP)
+        if GLOBAL_pos == -1:
+            GLOBAL_iterEnd = True
+            # return True
+            break
 
         if partial_mode is Pmode.PARTIAL or \
            partial_mode is Pmode.ARG and turn is Turn.OPT or \
@@ -565,11 +588,13 @@ if __name__ == "__main__":
     #     print(i)
 
     partial_mode = Pmode.ARG
+    print(GLOBAL_args[GLOBAL_pos:])
     print('mini 始め')
     bb = miniparse(opp, sys.argv)
     print('mini 終わり')
     print(bb)
     printOset(opp)
+    print('残りの引数 →', get_remainArgs())
 
     while bb:
         print()
@@ -591,8 +616,10 @@ if __name__ == "__main__":
         bb = miniparse(opp)
         print('mini 終わり')
         print(bb)
+        printOset(opp)
+        print('残りの引数 →', get_remainArgs())
         if bb:
-            printOset(opp)
+            print('終了')
 
 
     print(usage_mode)
