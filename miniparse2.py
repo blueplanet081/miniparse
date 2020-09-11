@@ -1,4 +1,4 @@
-from typing import KeysView, Literal, TextIO, Union, List, Dict, Tuple, Optional, Iterator
+from typing import KeysView, TextIO, Union, List, Dict, Tuple, Optional, Iterator
 import sys
 import pathlib
 from enum import Enum, Flag, auto
@@ -10,12 +10,6 @@ miniparse.py コマンドライン解析モジュール
 version 永遠の 0.9、一応機能満載版
 2020/9/8 by te.
 '''
-
-''' <:=>は外したので、Python 3.7 でも動きます。それより前は試していません。 '''
-# if sys.version_info < (3, 8):
-#     print('このモジュールは、Python 3.8以降に対応しています。ごめんなさい。')
-#     print('もし、モジュール内の <:=> 演算子部分を2行に書き換えれば、3.7以前でも動くかもしれません。')
-#     sys.exit()
 
 
 # 全部モード(WHOLE)、個別モード(PARTIAL)、
@@ -51,11 +45,13 @@ class Umode(Flag):
         オプションリストのみ出力(OLIST)、両方とも出力(BOTH)
     '''
     NONE = auto()           # 出力しない
+    USER = auto()           # ユーザ指定のメッセージを出力
     USAGE = auto()          # usage行のみ出力
     OLIST = auto()          # オプションリストを出力
     BOTH = USAGE | OLIST    # usage: とオプションリストの両方を出力
 
 usage_mode: Umode = Umode.BOTH      # noqa
+usage_usermessage = ''      # ユーザー指定のメッセージ（上書きする）
 
 # エラー終了時のコード
 error_code = 1
@@ -188,7 +184,7 @@ class OpSet():
         return key in self.op
 
     def _get_Longoption(self, key: str) -> str:
-        ''' 入力に一致するロングオプションkeyを取得する。無ければそのまま。
+        ''' 入力に一致するロングオプションkeyを取得する。無ければ空文字。
             （一意に判定できる省略形を許容する）
         '''
         if key[1:2] and key in self.op.keys():          # 2文字以上で完全一致
@@ -199,7 +195,7 @@ class OpSet():
                 if keep:                                     # 一意で無かった
                     return key
                 keep = lk                                    # 完全形をキープ
-        return keep if keep else key    # 見つかったらそれ、でなければ入力のkey
+        return keep             # 一意であればそのkeyが入っている。無ければ空文字
 
     def _set_True(self, key: str) -> bool:
         ''' そのオプションが指定（入力）されたことをセットする
@@ -305,7 +301,8 @@ def printUsage(comName: str, ops: OpSet, umode: Umode, output: TextIO = sys.stdo
     ''' usage:情報の出力。
         (umode=Umode.USAGE usage:行のみ、Umode.USAGE_AND_OPTION usage:行とオプションリストを出力)
     '''
-    print(umode)
+    if Umode.USER in Umode and usage_usermessage:
+        print(usage_usermessage, file=output)
     if Umode.USAGE in Umode:
         print(make_usage(comName, ops), file=output)
     if Umode.OLIST in umode:
@@ -334,8 +331,8 @@ def printOset(ops: OpSet) -> None:
 # -------------------------------------------------------------
 
 Eset = {'E0': "Command argument expected",
-        'E1': "Unkown option: -{0}",
-        'E2': "Argument expected for the -{0} option",
+        'E1': "Unkown option: {0}",
+        'E2': "Argument expected for the {0} option",
         'U0': "Your message here {0} of {1}",
         }
 
@@ -429,7 +426,8 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
                 ops._append_opArg(needArgP, p)
                 is_needArgBlock = False
             else:                               # 普通ブロックが来なかった
-                GLOBAL_err = ('E2', p)     # E2: Argument expected for the -<p>
+                whyphen = '--' if needArgP[1:2] else '-'
+                GLOBAL_err = ('E2', whyphen + needArgP)   # E2: Argument expected for the -<p>
                 break
             continue
 
@@ -453,12 +451,12 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
                     yield i, t.getTurn()
 
                 ops._set_True(p)
-                if ops.isNeedArg(p):                  # オプション引数必要
-                    is_needArg = True               # オプション引数待ちをセット
+                if ops.isNeedArg(p):                # オプション引数必要
+                    is_needArg = True                   # オプション引数待ちをセット
                     needArgP = p
                     # ops.append_opArg(needArgP, '')
             else:                               # Unknown option
-                GLOBAL_err = ('E1', p)     # E1: Unknown option: -<p>
+                GLOBAL_err = ('E1', '-' + p)    # E1: Unknown option: -<p>
                 break
 
         elif ptype == Ptype.SSEP:           # ショートオプションブロックの終わり
@@ -482,16 +480,16 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
             else:                           # 引数なし
                 pwork = ''
 
-            p = ops._get_Longoption(p)      # 一致するロングオプションkeyを取得
-            if ops.isExist(p):              # オプション判定
-                ops._set_True(p)
-                if pwork:
-                    ops._append_opArg(p, pwork)
-                elif ops.isNeedArg(p):          # オプション引数必要
+            wp = ops._get_Longoption(p)     # 一致するロングオプションkeyを取得
+            if wp:
+                ops._set_True(wp)
+                if pwork:                   # オプション(=xxx)ついてたか
+                    ops._append_opArg(wp, pwork)
+                elif ops.isNeedArg(wp):     # オプション必須か
                     is_needArgBlock = True
-                    needArgP = p
+                    needArgP = wp
             else:                           # Unknown option
-                GLOBAL_err = ('E1', p)      # E1: Unknown option: -<p>
+                GLOBAL_err = ('E1', '--' + p)      # E1: Unknown option: --<p>
                 break
 
     if not GLOBAL_err:     # 今までエラーが無くて、
