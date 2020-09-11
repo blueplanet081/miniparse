@@ -187,10 +187,10 @@ class OpSet():
         ''' 入力に一致するロングオプションkeyを取得する。無ければ空文字。
             （一意に判定できる省略形を許容する）
         '''
-        if key[1:2] and key in self.op.keys():          # 2文字以上で完全一致
+        if key[1:] and key in self.op.keys():           # 2文字以上で完全一致
             return key
         keep = ''
-        for lk in [k for k in self.op.keys() if k[1:2]]:
+        for lk in [k for k in self.op.keys() if k[1:]]:
             if key in lk:                               # 省略形だった
                 if keep:                                     # 一意で無かった
                     return key
@@ -426,7 +426,7 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
                 ops._append_opArg(needArgP, p)
                 is_needArgBlock = False
             else:                               # 普通ブロックが来なかった
-                whyphen = '--' if needArgP[1:2] else '-'
+                whyphen = '--' if needArgP[1:] else '-'
                 GLOBAL_err = ('E2', whyphen + needArgP)   # E2: Argument expected for the -<p>
                 break
             continue
