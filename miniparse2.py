@@ -191,7 +191,7 @@ class OpSet():
             return key
         keep = ''
         for lk in [k for k in self.op.keys() if k[1:]]:
-            if key in lk:                               # 省略形だった
+            if lk.startswith(key):                           # 省略形だった
                 if keep:                                     # 一意で無かった
                     return key
                 keep = lk                                    # 完全形をキープ
