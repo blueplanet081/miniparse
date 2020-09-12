@@ -6,7 +6,7 @@
 import sys
 import pathlib
 from typing import List
-import miniparse as mp
+import miniparse2 as mp
 import e2_path as e2
 
 
@@ -88,25 +88,36 @@ def show_directory(path: pathlib.Path, tlist: List[int] = []):
 # mp.usage_mode = mp.Umode.USAGE_AND_OPTION
 # mp.error_code = 1
 
-ops = {'': mp.Oset(False, False, '[ディレクトリ]', ''),
-       'a': mp.Oset(False, False, '', 'ドットやシステムディレクトリも表示'),
-       'L': mp.Oset(False, True, '階層数', '表示するディレクトリの深さを指定する'),
-       'd': mp.Oset(False, False, '', 'ディレクトリのみ表示'),
-       'E': mp.Oset(False, False, '', 'ツリーの表示に拡張文字を使用'),
-       'h': mp.Oset(False, False, '', '使い方を表示'),
-       }
+pm2: mp.TypeOpList = [('', False, '[ディレクトリ]'),
+                      ('a', False, '', 'ドットやシステムディレクトリも表示'),
+                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                      ('d', False, '', 'ディレクトリのみ表示'),
+                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                      ('h', False, '', '使い方を表示する'),
+                      ('help', False, '', '使い方を表示する'),
+                      ]
+opp = mp.OpSet(pm2)
+mp.miniparse(opp, sys.argv)
 
-myArgs = mp.wArgs(sys.argv)
-mp.miniparse(myArgs[1:], ops)
+# ops = {'': mp.Oset(False, False, '[ディレクトリ]', ''),
+#        'a': mp.Oset(False, False, '', 'ドットやシステムディレクトリも表示'),
+#        'L': mp.Oset(False, True, '階層数', '表示するディレクトリの深さを指定する'),
+#        'd': mp.Oset(False, False, '', 'ディレクトリのみ表示'),
+#        'E': mp.Oset(False, False, '', 'ツリーの表示に拡張文字を使用'),
+#        'h': mp.Oset(False, False, '', '使い方を表示'),
+#        }
 
-if ops['h'].isTrue:
+# myArgs = mp.wArgs(sys.argv)
+# mp.miniparse(myArgs[1:], ops)
+
+if opp.isTrue('h') or opp.isTrue('help'):
     print('ディレクトリやファイルのツリーを表示します。')
     print()
-    mp.printUsage(myArgs[0], ops, mp.Umode.USAGE_AND_OPTION)
+    mp.printUsage('', opp, mp.Umode.BOTH)
 
     sys.exit(0)
 
-args = mp.arguments()
+args = mp.get_arguments()
 if args:
     path = pathlib.Path(args[0])
     if not path.is_dir():
@@ -120,15 +131,15 @@ else:
 # dispAll = False
 dispTreeLevel = 0
 
-if ops['a'].isTrue:
+if opp.isTrue('a'):
     dispAll = True
-if ops['d'].isTrue:
+if opp.isTrue('d'):
     dispFiles = False
-if ops['E'].isTrue:
+if opp.isTrue('e'):
     tMoji = 1
 
-if ops['L'].isTrue:
-    if ops['L'].opArg.isdecimal:
-        dispTreeLevel = int(ops['L'].opArg)
+if opp.isTrue('L'):
+    if opp.get_opArg('L')[0].isdecimal:
+        dispTreeLevel = int(opp.get_opArg('L')[0])
 
 show_directory(path.resolve())
