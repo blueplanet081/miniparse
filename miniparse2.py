@@ -89,7 +89,7 @@ def __getWild(wild: str) -> List[str]:
     return ret
 
 
-def wArgs(__args: List[str]) -> List[str]:
+def _wArgs(__args: List[str]) -> List[str]:
     ''' 渡されたリスト中の項目をワイルドカード展開する
     '''
     ret = []
@@ -158,6 +158,7 @@ TypeOpList = List[Union[Tuple[str],     # オプション情報定義用の Type
 class OpSet():
     ''' オプション情報管理クラス '''
     def __init__(self, pms: TypeOpList):
+        ''' オプション管理情報の作成 '''
         self.op: Dict[str, Oinfo] = {}
         for pm in pms:                  # 注）同名オプションは上書きされる
             pmax = len(pm)
@@ -245,7 +246,7 @@ class OpSet():
         if key in self.op:
             return self.op[key].comment
         return ''
-    
+
 
 TypeOpset = Dict[str, Oinfo]                # オプションセットのType
 
@@ -337,7 +338,7 @@ Eset = {'E0': "Command argument expected",
         }
 
 
-def Errmsg(ueid: Union[str, Tuple[str, ...]], p0: str = 'p0', p1: str = 'p1') -> str:
+def make_errmsg(ueid: Union[str, Tuple[str, ...]], p0: str = 'p0', p1: str = 'p1') -> str:
     ''' エラーメッセージを生成する
     '''
     if type(ueid) is tuple:
@@ -391,7 +392,7 @@ def getOps(__args: List[str]) -> Iterator[Tuple[int, Ptype, str]]:
 # -------------------------------------------------------------
 
 GLOBAL_arguments = []           # 取得したパラメータの格納用
-def arguments() -> List[str]:   # noqa
+def get_arguments() -> List[str]:   # noqa
     ''' 取得したパラメータのリストを返す
     '''
     return GLOBAL_arguments
@@ -399,6 +400,10 @@ def arguments() -> List[str]:   # noqa
 
 TypeParseError = Optional[Tuple[str, ...]]     # エラーType
 GLOBAL_err: TypeParseError = None       # オプションエラー格納用
+def get_parseError() -> TypeParseError:     # noqa
+    ''' 解析エラーを返す
+    '''
+    return GLOBAL_err
 
 
 # -------------------------------------------------------------
@@ -499,7 +504,7 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
 
     if GLOBAL_err:     # エラー検出時処理
         if error_mode in (Emode.ERROR_CONT, Emode.ERROR_END):
-            print(Errmsg(GLOBAL_err), file=error_output)
+            print(make_errmsg(GLOBAL_err), file=error_output)
             printUsage("", ops, usage_mode, error_output)
         if error_mode == Emode.ERROR_END:
             sys.exit(error_code)
@@ -540,7 +545,7 @@ def miniparse(ops: OpSet, arg: List[str, ] = []) -> bool:
         GLOBAL_commandPath = arg[0]
         arg = arg[1:]
         if isWin:
-            arg = wArgs(arg)
+            arg = _wArgs(arg)
 
         GLOBAL_args = arg
         GLOBAL_iterMP = miniparse_0(ops, GLOBAL_args)
@@ -634,4 +639,4 @@ if __name__ == "__main__":
     print(make_plist(opp))
 
     print()
-    print(f'コマンドラインアーギュメントとして、{arguments()} が指定されました。')
+    print(f'コマンドラインアーギュメントとして、{get_arguments()} が指定されました。')
