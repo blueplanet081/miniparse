@@ -65,7 +65,7 @@ usage: ptree.py  -adeh -L階層数 --help    [ディレクトリ]
 </br>
 </br>
 
-### コマンドライン解析後の、結果の取得方法
+### コマンドライン解析後の結果の取得方法
 クラス OpSet のメソッドで取得
 
   - get_keys()  </br>
@@ -93,7 +93,7 @@ usage: ptree.py  -adeh -L階層数 --help    [ディレクトリ]
 </br>
 </br>
 
-その他の関数
+### その他の関数
 
   - printUsage(コマンド名、OpSetのインスタンス、Umode)　</br>
   　　簡単な Usage:を出力する。
