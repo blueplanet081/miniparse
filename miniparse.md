@@ -35,35 +35,51 @@ opp = mp.OpSet(pm2)
 
 </br>
 
-### オプション情報定義と、生成された Usage: の例
-
-  - オプション情報定義の例</br>
-  コマンド引数が省略可、オプション -L がオプション引数をとる（必須）
-
+### ユーザプログラムからの使用例
 ```py
-pm2: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
-                      ('a', False, '', 'ドットやシステムディレクトリも表示'),
-                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
-                      ('d', False, '', 'ディレクトリのみ表示'),
-                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
-                      ('h', False, '', '使い方を表示する'),
-                      ('help', False, '', '使い方を表示する'),
-                      ]
-opp = mp.OpSet(pm2)
-```
+    #!/usr/bin/env python3
+    # -------------------------------------------------------------
+    # miniparse 利用サンプル01
+    # 一番シンプルなやつ
+    # -------------------------------------------------------------
 
-  - 自動生成された Usage: とオプションリスト出力例
+    import sys
+    import miniparse2 as mp
+
+    pm2: mp.TypeOpList = [('', False, 'ファイル名'),
+                          ('l', False, '', '詳細情報も表示する'),
+                          ('h', False, '', '使い方を表示する'),
+                          ('help', False, '', '使い方を表示する'),
+                          ]
+    opp = mp.OpSet(pm2)
+    mp.miniparse(opp, sys.argv)
+
+    ''' miniparseの呼び出し、ここまで '''
+
+    ''' オプションの取得 '''
+    for op in opp.get_keys():
+        if opp.isTrue(op):
+            if len(op) == 1:
+                print(f'option -{op} が指定された。')
+            if len(op) > 1:
+                print(f'option --{op} が指定された。')
+
+    ''' コマンド引数の取得 '''
+    arglist = mp.get_arguments()
+    if arglist:
+        print()
+        print('コマンド引数リスト = ')
+        for arg in arglist:
+            print(f'  [{arg}]')
+
+    print()
+
+    ''' HELPメッセージ出力サンプル '''
+    if opp.isTrue('h') or opp.isTrue('help'):
+        print('このプログラムは、モジュール miniparse の使い方を示すものです。')
+        mp.printUsage('', opp, mp.Umode.BOTH)
+
 ```
-usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
-  -a: ドットやシステムディレクトリも表示
-  -L 階層数:  表示するディレクトリの深さを指定する
-  -d: ディレクトリのみ表示
-  -e: ツリーの表示に拡張文字を使用
-  -h: 使い方を表示する
-  --help: 使い方を表示する
-```
-</br>
-</br>
 
 ### コマンドライン解析後の結果の取得方法
 クラス OpSet のメソッドで取得
@@ -90,6 +106,38 @@ usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
 
   - get_arguments() </br>
   　　コマンドラインで指定された、コマンド引数のリストを返す。
+</br>
+</br>
+</br>
+
+### オプション情報定義と、生成された Usage: の例
+</br>
+
+  - オプション情報定義の例</br>
+  コマンド引数が省略可、オプション -L がオプション引数をとる（必須）
+
+```py
+pm2: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
+                      ('a', False, '', 'ドットやシステムディレクトリも表示'),
+                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                      ('d', False, '', 'ディレクトリのみ表示'),
+                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                      ('h', False, '', '使い方を表示する'),
+                      ('help', False, '', '使い方を表示する'),
+                      ]
+opp = mp.OpSet(pm2)
+```
+
+  - 自動生成された Usage: とオプションリスト出力例
+```
+usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
+  -a: ドットやシステムディレクトリも表示
+  -L 階層数:  表示するディレクトリの深さを指定する
+  -d: ディレクトリのみ表示
+  -e: ツリーの表示に拡張文字を使用
+  -h: 使い方を表示する
+  --help: 使い方を表示する
+```
 </br>
 </br>
 
@@ -242,15 +290,20 @@ miniparse 内で以下のように設定されています。どうしても言�
 ```
 
 
-### その他の関数
+### printUsage() 関数
+miniparse がエラー発生時に出力する Usage:関連のメッセージは、ユーザプログラムから利用することもできます。
 
   - printUsage(コマンド名, OpSetのインスタンス, Umode, 出力先)　</br>
-  　　簡単な Usage:を出力する。
+  　　簡単な Usage:とかオプションリストなどを出力する。
+  
     - コマンド名（省略時は、デフォルトのコマンド名）
+    - OpSetのインスタンス（オプション情報を定義したもの）
     - Umode
+      - Umode.USER　　 ユーザ定義のメッセージ
       - Umode.USAGE　　Usage行のみ出力する
       - Umode.OLIST　　オプションリストを出力する
       - Umode.BOTH　 　Usage: とオプションリストの両方を出力する
+    - 出力先（sys.stdout とか、sys.stderr とか）
 </br>
 </br>
 </br>
