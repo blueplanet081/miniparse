@@ -93,19 +93,6 @@ usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
 </br>
 </br>
 
-### その他の関数
-
-  - printUsage(コマンド名、OpSetのインスタンス、Umode)　</br>
-  　　簡単な Usage:を出力する。
-    - コマンド名（省略時は、デフォルトのコマンド名）
-    - Umode
-      - Umode.USAGE　　Usage行のみ出力する
-      - Umode.OLIST　　オプションリストを出力する
-      - Umode.BOTH　 　Usage: とオプションリストの両方を出力する
-</br>
-</br>
-</br>
-
 ## エラー検出時の処理
 
 ### miniparseは、コマンドライン解析時に次のエラーを検出します。
@@ -181,3 +168,90 @@ usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
   定義済みのエラーメッセージ（原文）を元に、エラーメッセージ文字列を生成して返す。</br>
   　　err:　　get_parseError() で得られる tuple型のエラー</br>
   　　ex)　make_errmsg(('E1', '-L'))　で、文字列　"Unknown option -L" を返す
+
+</br>
+</br>
+</br>
+
+### miniparse 内でのエラーメッセージ出力処理
+コマンドライン解析時にエラーが発生したとき、miniparse 内で出力するメッセージは以下になります。
+1. make_errmsg() で生成されるエラーメッセージ
+2. ユーザ登録のメッセージ（ユーザプログラム側で登録時）
+3. 簡易的な Usage:（デフォルト）
+4. オプションリスト（デフォルト）
+
+エラー出力時に、2.～4. のメッセージを併せて出力するかどうかは、以下の定義によります。
+
+```
+  usage_mode = Umode.BOTH    # デフォルト
+
+      Umode.NONE           # 出力しない
+      Umode.USER           # ユーザ指定のメッセージを出力
+      Umode.USAGE          # usage行のみ出力
+      Umode.OLIST          # オプションリストを出力
+      Umode.BOTH = Umode.USAGE | Umode.OLIST    # usage: とオプションリストの両方を出力
+```
+ユーザ指定のメッセージは、以下のように登録します。
+```
+  usage_usermessage = 'Usage:  plist -h | [-L<整数>] [-e] [ディレクトリ名]'
+```
+</br>
+エラーメッセージと　Usage: をユーザ指定のものに付け替えた例
+
+```py
+    import sys
+    import miniparse2 as mp
+
+    mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
+    mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
+
+    pm2: mp.TypeOpList = [('', True, '開始ディレクトリ'),
+                          ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                          ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                          ('h', False, '', '使い方を表示する'),
+                          ]
+
+
+    mp.usage_mode = mp.Umode.USER | mp.Umode.OLIST
+    mp.usage_usermessage = 'Usage:  plist.py  -h | [-L<整数>] [-e] [ディレクトリ名]'
+
+    opp = mp.OpSet(pm2)
+    mp.miniparse(opp, sys.argv)
+
+```
+
+エラー時の出力例
+```
+    そんなオプション（ -l ）はありません
+    Usage:  plist.py  -h | [-L<整数>] [-e] [ディレクトリ名]
+      -L 階層数:  表示するディレクトリの深さを指定する
+      -e: ツリーの表示に拡張文字を使用
+      -h: 使い方を表示する```
+```
+</br>
+</br>
+
+### エラー時のメッセージ出力先と、終了コード
+miniparse 内で以下のように設定されています。どうしても言うなら、ユーザプログラム側で、miniparse() 呼び出し前に書き換えてください。
+```py
+    # エラー終了時のコード
+    error_code = 1
+    # エラーメッセージ出力先
+    error_output: TextIO = sys.stderr
+
+```
+
+
+### その他の関数
+
+  - printUsage(コマンド名, OpSetのインスタンス, Umode, 出力先)　</br>
+  　　簡単な Usage:を出力する。
+    - コマンド名（省略時は、デフォルトのコマンド名）
+    - Umode
+      - Umode.USAGE　　Usage行のみ出力する
+      - Umode.OLIST　　オプションリストを出力する
+      - Umode.BOTH　 　Usage: とオプションリストの両方を出力する
+</br>
+</br>
+</br>
+
