@@ -41,7 +41,7 @@ opp = mp.OpSet(pm2)
   コマンド引数が省略可、オプション -L がオプション引数をとる（必須）
 
 ```py
-pm2: mp.TypeOpList = [('', False, '[ディレクトリ]'),
+pm2: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
                       ('a', False, '', 'ドットやシステムディレクトリも表示'),
                       ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
                       ('d', False, '', 'ディレクトリのみ表示'),
@@ -54,7 +54,7 @@ opp = mp.OpSet(pm2)
 
   - 自動生成された Usage: とオプションリスト出力例
 ```
-usage: ptree.py  -adeh -L階層数 --help    [ディレクトリ]
+usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
   -a: ドットやシステムディレクトリも表示
   -L 階層数:  表示するディレクトリの深さを指定する
   -d: ディレクトリのみ表示
@@ -77,8 +77,8 @@ usage: ptree.py  -adeh -L階層数 --help    [ディレクトリ]
   - isNeedArg(op) </br>
  　　そのオプションの引数が必須かどうか。
   - get_opArg(op) </br>
- 　　コマンドラインで指定された、そのオプションの引数のリスト。</br>
- 　　（繰り返し指定されると、複数の引数が存在する）</br>
+ 　　コマンドラインで指定された、そのオプションの引数のリストを返す。</br>
+ 　　（繰り返し指定されると複数のオプション引数が存在するため、リストになっている）</br>
   - get_Argcomment(op) </br>
  　　オプション情報として定義された、そのオプションの引数の説明を取得する。
   - get_comment(op) </br>
@@ -102,4 +102,82 @@ usage: ptree.py  -adeh -L階層数 --help    [ディレクトリ]
       - Umode.USAGE　　Usage行のみ出力する
       - Umode.OLIST　　オプションリストを出力する
       - Umode.BOTH　 　Usage: とオプションリストの両方を出力する
+</br>
+</br>
+</br>
 
+## エラー検出時の処理
+
+### miniparseは、コマンドライン解析時に次のエラーを検出します。
+- コマンド引数が必須の時、コマンド引数が入力されなかった</br>
+　　エラーコード 'E0': "Command argument expected"
+- 定義以外のオプションが入力された</br>
+　　エラーコード 'E1': "Unknown option {0}"  （{0} にオプションが入る）
+- オプション引数が必須のオプションが入力されたが、オプション引数が入力されなかった</br>
+　　エラーコード 'E2': "Argument expected for the {0} option"  （{0} にオプションが入る）
+</br>
+</br>
+
+### 上記エラーメッセージは、あらかじめユーザプログラム側で上書きすることができます。
+使用例
+```py
+  import sys
+  import miniparse2 as mp
+
+  mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
+  mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
+
+  pm2: mp.TypeOpList = [('', True, 'ディレクトリ名'),
+                        ('l', False, '', '詳細情報も表示する'),
+                        ('h', False, '', '使い方を表示する'),
+                        ('help', False, '', '使い方を表示する'),
+                        ]
+  opp = mp.OpSet(pm2)
+  mp.miniparse(opp, sys.argv)
+
+```
+
+
+### エラー検出時の処理は、次の３通りになります。
+- エラーメッセージを出力して処理終了（デフォルト）</br>
+　　error_mode = Emode.ERROR_END　　　# 初期値
+- エラーメッセージを出力して処理続行（ユーザプログラム側で終了処理を行う）</br>
+　　error_mode = Emode.ERROR_CONT
+- エラーメッセージを出力せずに処理続行（エラーメッセージ出力もユーザプログラム側で行う）</br>
+　　error_mode = Emode.SILENT_CONT
+</br>
+</br>
+</br>
+
+エラー検出時の処理をユーザプログラム側で実行する例
+```py
+  mp.error_mode = mp.Emode.SILENT_CONT
+
+  opp = mp.OpSet(pm2)
+  mp.miniparse(opp, sys.argv)
+
+  err = mp.get_parseError()
+  if err:
+      print('入力エラーです。')
+      print(mp.make_errmsg(err))
+      sys.exit(1)
+
+```
+
+実行例
+```py
+入力エラーです。
+コマンドラインで、出力を開始するディレクトリを指定してください
+```
+
+### エラー処理に使用する関数
+
+- get_parseError()</br>
+  コマンドライン解析時のエラーを tuple型で取得する。エラーが無い時は空の tupleを返す。</br>
+  tuple型のエラーの形式は、以下のとおり</br>
+  　　　　(str:エラーコード, str:エラーの原因)　　ex) ('E1', '-L')
+
+- make_errmsg(err)</br>
+  定義済みのエラーメッセージ（原文）を元に、エラーメッセージ文字列を生成して返す。</br>
+  　　err:　　get_parseError() で得られる tuple型のエラー</br>
+  　　ex)　make_errmsg(('E1', '-L'))　で、文字列　"Unknown option -L" を返す
