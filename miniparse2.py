@@ -33,8 +33,8 @@ partial_mode: Pmode = Pmode.WHOLE   # noqa
 class Emode(Enum):
     ''' エラー出力＆終了(ERROR_END)、エラー出力続行(ERROR_CONT)、サイレント続行(SILENT_CONT) '''
     ERROR_END = auto()       # エラーを出力して終了
-    ERROR_CONT = auto()      # エラーを出力して続行（miniparse() の戻り値がエラーID）
-    SILENT_CONT = auto()     # エラーを出さずに続行（miniparse() の戻り値がエラーID）
+    ERROR_CONT = auto()      # エラーを出力して続行（エラーコードは get_parseError() で取得）
+    SILENT_CONT = auto()     # エラーを出さずに続行（エラーコードは get_parseError() で取得）
 
 error_mode: Emode = Emode.ERROR_END    # noqa
 
@@ -302,9 +302,9 @@ def printUsage(comName: str, ops: OpSet, umode: Umode, output: TextIO = sys.stdo
     ''' usage:情報の出力。
         (umode=Umode.USAGE usage:行のみ、Umode.USAGE_AND_OPTION usage:行とオプションリストを出力)
     '''
-    if Umode.USER in Umode and usage_usermessage:
+    if Umode.USER in umode and usage_usermessage:
         print(usage_usermessage, file=output)
-    if Umode.USAGE in Umode:
+    if Umode.USAGE in umode:
         print(make_usage(comName, ops), file=output)
     if Umode.OLIST in umode:
         print(make_plist(ops), file=output)
@@ -332,7 +332,7 @@ def printOset(ops: OpSet) -> None:
 # -------------------------------------------------------------
 
 Eset = {'E0': "Command argument expected",
-        'E1': "Unkown option: {0}",
+        'E1': "Unknown option: {0}",
         'E2': "Argument expected for the {0} option",
         'U0': "Your message here {0} of {1}",
         }
