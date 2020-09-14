@@ -16,17 +16,17 @@ version 永遠の 0.9、一応機能満載版
 # 引数までで一旦区切りモード(ARG)     command -F params | -bx params2 | -f ....
 # オプションで一旦区切りモード(OPT)   command -F | params -bx | params2 -f |
 # （| ← 区切り箇所）
-class Pmode(Enum):
+class Smode(Enum):
     ''' 全部モード(WHOLE)、個別モード(PARTIAL)、
         引数区切りモード(ARG)、オプション区切りモード(OPT)
     '''
     WHOLE = auto()      # 全部モード
-    PARTIAL = auto()    # 個別モード
+    EVERY = auto()      # 個別モード
     ARG = auto()        # 引数区切りモード
     OPT = auto()        # オプション区切りモード
 
 
-partial_mode: Pmode = Pmode.WHOLE   # noqa
+separation_mode: Smode = Smode.WHOLE   # noqa
 
 
 # エラーを検出したときにどうするか
@@ -447,14 +447,13 @@ def miniparse_0(ops: OpSet, args: List[str,]) -> Iterator[Tuple[int, Optional[En
                 ops._append_opArg('', p)
 
         elif ptype == Ptype.SOPT:           # ショートオプションブロック
+            if t.checkTurn(Turn.OPT):           # ★★引数解析のターン
+                yield i, t.getTurn()
+
             if is_needArg:                      # オプション引数待ち
                 pass
 
             elif ops.isExist(p):                    # オプション判定
-
-                if t.checkTurn(Turn.OPT):           # ★★引数解析のターン
-                    yield i, t.getTurn()
-
                 ops._set_True(p)
                 if ops.isNeedArg(p):                # オプション引数必要
                     is_needArg = True                   # オプション引数待ちをセット
@@ -557,9 +556,9 @@ def miniparse(ops: OpSet, arg: List[str, ] = []) -> bool:
             # return True
             break
 
-        if partial_mode is Pmode.PARTIAL or \
-           partial_mode is Pmode.ARG and turn is Turn.OPT or \
-           partial_mode is Pmode.OPT and turn is Turn.ARG:
+        if separation_mode is Smode.EVERY or \
+           separation_mode is Smode.ARG and turn is Turn.OPT or \
+           separation_mode is Smode.OPT and turn is Turn.ARG:
             return True
     return False
 
@@ -570,7 +569,7 @@ def miniparse(ops: OpSet, arg: List[str, ] = []) -> bool:
 
 
 if __name__ == "__main__":
-    partial_mode = Pmode.ARG
+    separation_mode = Smode.ARG
     usage_mode = Umode.BOTH
     error_code = 1
 
@@ -590,7 +589,7 @@ if __name__ == "__main__":
     # for i in miniparse(opp, myArgs[1:]):
     #     print(i)
 
-    partial_mode = Pmode.ARG
+    separation_mode = Smode.ARG
     print(GLOBAL_args[GLOBAL_pos:])
     print('mini 始め')
     bb = miniparse(opp, sys.argv)
