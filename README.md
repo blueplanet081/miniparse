@@ -6,16 +6,39 @@ CLIベースのコマンドを試作／製作するとき、起動オプショ�
 
 </br>
 
+## 特徴（宣伝）
+
+- オプション情報を羅列するだけで定義でき、関数呼び出し一つで解析できるので、手軽に使えると思います。
+- 入力エラー時に、簡易的な Usage:（もどき）情報や、オプション情報リストを自動生成して表示できます。
+- エラーメッセージや Usage:表示などを（自動で表示するものの代わりに）ユーザ定義できます。
+- コマンド引数の後ろにオプションを入力するパターンとか、わりといろいろ対処できるようにしたつもりです。
+
+</br>
+
+## 動作環境
+
+Python 3.7以降
+- 作成と主なテストは Python 3.8 を使用しています。
+- 3.6 でも動くかもしれませんが、テストしていません。
+- Enum を使っているので、3.6より古い環境では多分動きません。
+
+</br>
+
 ## **ファイル構成**
 
 ファイル名         | 内容
 ------------------|----
 README.md         | このドキュメント
+miniparse.md      | もう少し詳しい説明
 miniparse.py      | miniparse本体（使うのに必要なのはこのファイルだけです）
-miniparse2.py     | こっそり修正用work、見なかったことにして。
 ptree.py          | miniparse使用サンプル。いわゆる treeコマンドの試作版です。
 e2_path.py        | ptree.pyが呼び出している自作ライブラリ（添付用簡易版）
-miniparse_test.py | 古いテスト用プログラムです。見なかったことにしてください。
+mp_sample01.py    | 一番シンプルなサンプル
+mp_sample02.py    | エラー時にユーザ側で処理するサンプル
+mp_sample03.py    | Usage:情報とか、ユーザ定義するサンプル
+mp_sample04.py    | 区切りモードのサンプル
+mp_sample04b.py   | 区切りながら最後まで解析するサンプル
+mp_sample04c.py   | 区切りながら、その都度リセットして最後まで解析するサンプル
 
 </br>
 
@@ -26,7 +49,7 @@ miniparse_test.py | 古いテスト用プログラムです。見なかったこ
 0.5くらい    |2020/8/27|               |いちおう完成
 0.6くらい    |2020/9/1 |miniparse.py  |コマンド引数のホームディレクトリ、ワイルドカード展開を追加</br>(Windowsで使用の場合のみ)
 0.8くらい    |2020/9/3|miniparse.py   |Let's Python@facebook でアドバイスを受けて、解析部大幅変更</br>(一部機能制限暫定版)
-〃　          |〃    |ptree.py    |miniparse.py処理変更に伴って、呼び出し方一部変更
+煮え切らない0.9|2020/9/15    |miniparse.py |完全版だけど、まだ使用実績ナシ
 
 
 </br>
@@ -37,12 +60,12 @@ miniparse_test.py | 古いテスト用プログラムです。見なかったこ
 import sys
 import miniparse as mp
 
-pm2: mp.TypeOpList = [('', False, 'ファイル名'),
+pms: mp.TypeOpList = [('', False, 'ファイル名'),
                       ('l', False, '', '詳細情報も表示する'),
                       ('h', False, '', '使い方を表示する'),
                       ('help', False, '', '使い方を表示する'),
                       ]
-opp = mp.OpSet(pm2)
+opp = mp.OpSet(pms)
 mp.miniparse(opp, sys.argv)
 
 ```
@@ -58,6 +81,8 @@ mp.miniparse(opp, sys.argv)
 ''' オプションの取得 '''
 for op in opp.get_keys():
     if opp.isTrue(op):
+        if len(op) == 0 and opp.get_opArg(op):
+            print('コマンド引数が入力された。', opp.get_opArg(op))
         if len(op) == 1:
             print(f'option -{op} が指定された。')
         if len(op) > 1:

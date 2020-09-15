@@ -6,12 +6,12 @@
 ```py
 import miniparse as mp
 
-pm2: mp.TypeOpList = [('', False, 'ファイル名'),
+pms: mp.TypeOpList = [('', False, 'ファイル名'),
                       ('l', False, '', '詳細情報も表示する'),
                       ('h', False, '', '使い方を表示する'),
                       ('help', False, '', '使い方を表示する'),
                       ]
-opp = mp.OpSet(pm2)
+opp = mp.OpSet(pms)
 
 ```
 
@@ -37,47 +37,49 @@ opp = mp.OpSet(pm2)
 
 ### ユーザプログラムからの使用例
 ```py
-    #!/usr/bin/env python3
-    # -------------------------------------------------------------
-    # miniparse 利用サンプル01
-    # 一番シンプルなやつ
-    # -------------------------------------------------------------
+#!/usr/bin/env python3
+# -------------------------------------------------------------
+# miniparse 利用サンプル01
+# 一番シンプルなやつ
+# -------------------------------------------------------------
 
-    import sys
-    import miniparse2 as mp
+import sys
+import miniparse as mp
 
-    pm2: mp.TypeOpList = [('', False, 'ファイル名'),
-                          ('l', False, '', '詳細情報も表示する'),
-                          ('h', False, '', '使い方を表示する'),
-                          ('help', False, '', '使い方を表示する'),
-                          ]
-    opp = mp.OpSet(pm2)
-    mp.miniparse(opp, sys.argv)
+pms: mp.TypeOpList = [('', False, 'ファイル名'),
+                      ('l', False, '', '詳細情報も表示する'),
+                      ('h', False, '', '使い方を表示する'),
+                      ('help', False, '', '使い方を表示する'),
+                      ]
+opp = mp.OpSet(pms)
+mp.miniparse(opp, sys.argv)
 
-    ''' miniparseの呼び出し、ここまで '''
+''' miniparseの呼び出し、ここまで '''
 
-    ''' オプションの取得 '''
-    for op in opp.get_keys():
-        if opp.isTrue(op):
-            if len(op) == 1:
-                print(f'option -{op} が指定された。')
-            if len(op) > 1:
-                print(f'option --{op} が指定された。')
+''' オプションの取得 '''
+for op in opp.get_keys():
+    if opp.isTrue(op):
+        if len(op) == 0 and opp.get_opArg(op):
+            print('コマンド引数が入力された。', opp.get_opArg(op))
+        if len(op) == 1:
+            print(f'option -{op} が指定された。')
+        if len(op) > 1:
+            print(f'option --{op} が指定された。')
 
-    ''' コマンド引数の取得 '''
-    arglist = mp.get_arguments()
-    if arglist:
-        print()
-        print('コマンド引数リスト = ')
-        for arg in arglist:
-            print(f'  [{arg}]')
-
+''' コマンド引数の取得 '''
+arglist = mp.get_arguments()
+if arglist:
     print()
+    print('コマンド引数リスト = ')
+    for arg in arglist:
+        print(f'  [{arg}]')
 
-    ''' HELPメッセージ出力サンプル '''
-    if opp.isTrue('h') or opp.isTrue('help'):
-        print('このプログラムは、モジュール miniparse の使い方を示すものです。')
-        mp.printUsage('', opp, mp.Umode.BOTH)
+print()
+
+''' HELPメッセージ出力サンプル '''
+if opp.isTrue('h') or opp.isTrue('help'):
+    print('このプログラムは、モジュール miniparse の使い方を示すものです。')
+    mp.printUsage('', opp, mp.Umode.BOTH)
 
 ```
 
@@ -117,7 +119,7 @@ opp = mp.OpSet(pm2)
   コマンド引数が省略可、オプション -L がオプション引数をとる（必須）
 
 ```py
-pm2: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
+pms: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
                       ('a', False, '', 'ドットやシステムディレクトリも表示'),
                       ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
                       ('d', False, '', 'ディレクトリのみ表示'),
@@ -125,7 +127,7 @@ pm2: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
                       ('h', False, '', '使い方を表示する'),
                       ('help', False, '', '使い方を表示する'),
                       ]
-opp = mp.OpSet(pm2)
+opp = mp.OpSet(pms)
 ```
 
   - 自動生成された Usage: とオプションリスト出力例
@@ -156,19 +158,19 @@ usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
 ### 上記エラーメッセージは、あらかじめユーザプログラム側で上書きすることができます。
 使用例
 ```py
-  import sys
-  import miniparse2 as mp
+import sys
+import miniparse as mp
 
-  mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
-  mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
+mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
+mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
 
-  pm2: mp.TypeOpList = [('', True, 'ディレクトリ名'),
-                        ('l', False, '', '詳細情報も表示する'),
-                        ('h', False, '', '使い方を表示する'),
-                        ('help', False, '', '使い方を表示する'),
-                        ]
-  opp = mp.OpSet(pm2)
-  mp.miniparse(opp, sys.argv)
+pms: mp.TypeOpList = [('', True, 'ディレクトリ名'),
+                      ('l', False, '', '詳細情報も表示する'),
+                      ('h', False, '', '使い方を表示する'),
+                      ('help', False, '', '使い方を表示する'),
+                      ]
+opp = mp.OpSet(pms)
+mp.miniparse(opp, sys.argv)
 
 ```
 
@@ -186,16 +188,16 @@ usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
 
 エラー検出時の処理をユーザプログラム側で実行する例
 ```py
-  mp.error_mode = mp.Emode.SILENT_CONT
+mp.error_mode = mp.Emode.SILENT_CONT
 
-  opp = mp.OpSet(pm2)
-  mp.miniparse(opp, sys.argv)
+opp = mp.OpSet(pms)
+mp.miniparse(opp, sys.argv)
 
-  err = mp.get_parseError()
-  if err:
-      print('入力エラーです。')
-      print(mp.make_errmsg(err))
-      sys.exit(1)
+err = mp.get_parseError()
+if err:
+    print('入力エラーです。')
+    print(mp.make_errmsg(err))
+    sys.exit(1)
 
 ```
 
@@ -247,24 +249,24 @@ usage: ptree.py  -adeh -L階層数 --help    [開始ディレクトリ]
 エラーメッセージと　Usage: をユーザ指定のものに付け替えた例
 
 ```py
-    import sys
-    import miniparse2 as mp
+import sys
+import miniparse as mp
 
-    mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
-    mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
+mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
+mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
 
-    pm2: mp.TypeOpList = [('', True, '開始ディレクトリ'),
-                          ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
-                          ('e', False, '', 'ツリーの表示に拡張文字を使用'),
-                          ('h', False, '', '使い方を表示する'),
-                          ]
+pms: mp.TypeOpList = [('', True, '開始ディレクトリ'),
+                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                      ('h', False, '', '使い方を表示する'),
+                      ]
 
 
-    mp.usage_mode = mp.Umode.USER | mp.Umode.OLIST
-    mp.usage_usermessage = 'Usage:  plist.py  -h | [-L<整数>] [-e] [ディレクトリ名]'
+mp.usage_mode = mp.Umode.USER | mp.Umode.OLIST
+mp.usage_usermessage = 'Usage:  plist.py  -h | [-L<整数>] [-e] [ディレクトリ名]'
 
-    opp = mp.OpSet(pm2)
-    mp.miniparse(opp, sys.argv)
+opp = mp.OpSet(pms)
+mp.miniparse(opp, sys.argv)
 
 ```
 
@@ -342,56 +344,56 @@ separation_mode: Smode = Smode.WHOLE   # デフォルト
 ### コマンドラインの解析を、最初のコマンド引数群で一旦停止するサンプル
 
 ```py
-    #!/usr/bin/env python3
-    # -------------------------------------------------------------
-    # miniparse 利用サンプル04
-    # コマンドラインの解析を、最初のコマンド引数群で一旦停止するサンプル
-    # -------------------------------------------------------------
+#!/usr/bin/env python3
+# -------------------------------------------------------------
+# miniparse 利用サンプル04
+# コマンドラインの解析を、最初のコマンド引数群で一旦停止するサンプル
+# -------------------------------------------------------------
 
-    import sys
-    import miniparse2 as mp
-
-
-    pm2: mp.TypeOpList = [('', False, '開始ディレクトリ'),
-                          ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
-                          ('e', False, '', 'ツリーの表示に拡張文字を使用'),
-                          ('h', False, '', '使い方を表示する'),
-                          ('version', False, '', 'version情報を表示する'),
-                          ]
+import sys
+import miniparse as mp
 
 
-    mp.separation_mode = mp.Smode.ARG           # コマンド引数区切りモード
+pms: mp.TypeOpList = [('', False, '開始ディレクトリ'),
+                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                      ('h', False, '', '使い方を表示する'),
+                      ('version', False, '', 'version情報を表示する'),
+                      ]
 
-    opp = mp.OpSet(pm2)
-    stillremain = mp.miniparse(opp, sys.argv)
-    ''' miniparseの呼び出し、ここまで '''
 
-    ''' オプションの取得 '''
-    # mp.printOpset(opp)
-    for op in opp.get_keys():
-        if opp.isTrue(op):
-            if len(op) == 0 and opp.get_opArg(op):
-                print('コマンド引数が入力された。', opp.get_opArg(op))
-            if len(op) == 1:
-                print(f'option -{op} が指定された。',
-                      f'オプション引数 = {opp.get_opArg(op)}' if opp.get_opArg(op) else '')
-            if len(op) > 1:
-                print(f'option --{op} が指定された。',
-                      f'オプション引数 = {opp.get_opArg(op)}' if opp.get_opArg(op) else '')
+mp.separation_mode = mp.Smode.ARG           # コマンド引数区切りモード
 
-    ''' コマンド引数の取得 '''
-    arglist = mp.get_arguments()
-    if arglist:
-        print()
-        print('コマンド引数リスト = ')
-        for arg in arglist:
-            print(f"  '{arg}'")
+opp = mp.OpSet(pms)
+stillremain = mp.miniparse(opp, sys.argv)
+''' miniparseの呼び出し、ここまで '''
 
+''' オプションの取得 '''
+# mp.printOpset(opp)
+for op in opp.get_keys():
+    if opp.isTrue(op):
+        if len(op) == 0 and opp.get_opArg(op):
+            print('コマンド引数が入力された。', opp.get_opArg(op))
+        if len(op) == 1:
+            print(f'option -{op} が指定された。',
+                  f'オプション引数 = {opp.get_opArg(op)}' if opp.get_opArg(op) else '')
+        if len(op) > 1:
+            print(f'option --{op} が指定された。',
+                  f'オプション引数 = {opp.get_opArg(op)}' if opp.get_opArg(op) else '')
+
+''' コマンド引数の取得 '''
+arglist = mp.get_arguments()
+if arglist:
     print()
-    remain_arglist = mp.get_remainArgs()
-    print('残りのコマンドラインリスト = ')
-    for arg in remain_arglist:
+    print('コマンド引数リスト = ')
+    for arg in arglist:
         print(f"  '{arg}'")
+
+print()
+remain_arglist = mp.get_remainArgs()
+print('残りのコマンドラインリスト = ')
+for arg in remain_arglist:
+    print(f"  '{arg}'")
 
 ```
 注）上記サンプルで ''' オプションの取得 ''' 部分の処理は、下記のデバッグ用関数を呼び出すことで同様の出力を得られます。
@@ -436,10 +438,10 @@ option -h が指定された。
 # -------------------------------------------------------------
 
 import sys
-import miniparse2 as mp
+import miniparse as mp
 
 
-pm2: mp.TypeOpList = [('', False, '開始ディレクトリ'),
+pms: mp.TypeOpList = [('', False, '開始ディレクトリ'),
                       ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
                       ('e', False, '', 'ツリーの表示に拡張文字を使用'),
                       ('h', False, '', '使い方を表示する'),
@@ -449,7 +451,7 @@ pm2: mp.TypeOpList = [('', False, '開始ディレクトリ'),
 
 mp.separation_mode = mp.Smode.ARG           # コマンド引数区切りモード
 
-opp = mp.OpSet(pm2)
+opp = mp.OpSet(pms)
 stillremain = mp.miniparse(opp, sys.argv)
 ''' miniparseの呼び出し、ここまで '''
 
