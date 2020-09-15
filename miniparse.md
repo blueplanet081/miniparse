@@ -394,6 +394,10 @@ separation_mode: Smode = Smode.WHOLE   # デフォルト
         print(f"  '{arg}'")
 
 ```
+注）上記サンプルで ''' オプションの取得 ''' 部分の処理は、下記のデバッグ用関数を呼び出すことで同様の出力を得られます。
+>>printOpset(OpSetのインスタンス)
+
+</br>
 
 ### 出力例
 ```
@@ -419,4 +423,192 @@ option -h が指定された。
   'miniparse.py'
   'miniparse2.py'
   'miniparse_test2.py'
+```
+
+
+
+### コマンドラインの解析をコマンド引数群で一旦停止しながら、最後まで解析するサンプル
+```py
+#!/usr/bin/env python3
+# -------------------------------------------------------------
+# miniparse 利用サンプル04b
+# コマンドラインの解析をコマンド引数群で一旦停止しながら、最後まで解析するサンプル
+# -------------------------------------------------------------
+
+import sys
+import miniparse2 as mp
+
+
+pm2: mp.TypeOpList = [('', False, '開始ディレクトリ'),
+                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                      ('h', False, '', '使い方を表示する'),
+                      ('version', False, '', 'version情報を表示する'),
+                      ]
+
+
+mp.separation_mode = mp.Smode.ARG           # コマンド引数区切りモード
+
+opp = mp.OpSet(pm2)
+stillremain = mp.miniparse(opp, sys.argv)
+''' miniparseの呼び出し、ここまで '''
+
+while stillremain:
+    ''' オプションの取得 '''
+    mp.printOpset(opp)
+
+    ''' コマンド引数の取得 '''
+    arglist = mp.get_arguments()
+    if arglist:
+        print()
+        print('コマンド引数リスト = ')
+        for arg in arglist:
+            print(f"  '{arg}'")
+
+    print()
+    remain_arglist = mp.get_remainArgs()
+    print('残りのコマンドラインリスト = ')
+    for arg in remain_arglist:
+        print(f"  '{arg}'")
+
+    print()
+
+    ''' 残りのコマンドラインの解析を続行 '''
+    stillremain = mp.miniparse()
+
+```
+
+### 出力例
+```
+mp_sample04.py -eL3 -h mp*.py -L -5 --ver *.md -L7 mi*.py
+
+コマンド引数が入力された。 ['mp_sample04.py', 'mp_sample04b.py', 'mp_sample04c.py']
+option -L が指定された。 オプション引数 = ['3']
+option -e が指定された。
+option -h が指定された。
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+
+残りのコマンドラインリスト =
+  '-L'
+  '5'
+  '--ver'
+  'miniparse.md'
+  'README.md'
+  '-L7'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+
+コマンド引数が入力された。 ['mp_sample04.py', 'mp_sample04b.py', 'mp_sample04c.py', 'miniparse.md', 'README.md']
+option -L が指定された。 オプション引数 = ['3', '5']
+option -e が指定された。
+option -h が指定された。
+option --version が指定された。
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+  'miniparse.md'
+  'README.md'
+
+残りのコマンドラインリスト =
+  '-L7'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+
+コマンド引数が入力された。 ['mp_sample04.py', 'mp_sample04b.py', 'mp_sample04c.py', 'miniparse.md', 'README.md', 'miniparse.py', 'miniparse2.py', 'miniparse_test2.py']
+option -L が指定された。 オプション引数 = ['3', '5', '7']
+option -e が指定された。
+option -h が指定された。
+option --version が指定された。
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+  'miniparse.md'
+  'README.md'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+
+残りのコマンドラインリスト =
+```
+</br>
+</br>
+
+### オプション情報をその都度リセットして、残りのコマンドラインの解析を続行する例
+</br>
+取得したオプション情報は、その都度付け足されていきます。解析の都度、オプション情報をリセットするには、reset_data() メソッドを使用します。
+
+reset_data() メソッド使用例（部分）
+```py
+    ''' オプション情報をリセットして、残りのコマンドラインの解析を続行 '''
+    opp.reset_data()
+    still_remain = mp.miniparse()
+```
+
+### 出力例
+```
+mp_sample04.py -eL3 -h mp*.py -L -5 --ver *.md -L7 mi*.py
+
+コマンド引数が入力された。 ['mp_sample04.py', 'mp_sample04b.py', 'mp_sample04c.py']
+option -L が指定された。 オプション引数 = ['3']
+option -e が指定された。
+option -h が指定された。
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+
+残りのコマンドラインリスト =
+  '-L'
+  '5'
+  '--ver'
+  'miniparse.md'
+  'README.md'
+  '-L7'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+
+コマンド引数が入力された。 ['miniparse.md', 'README.md']
+option -L が指定された。 オプション引数 = ['5']
+option --version が指定された。
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+  'miniparse.md'
+  'README.md'
+
+残りのコマンドラインリスト =
+  '-L7'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+
+コマンド引数が入力された。 ['miniparse.py', 'miniparse2.py', 'miniparse_test2.py']
+option -L が指定された。 オプション引数 = ['7']
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+  'miniparse.md'
+  'README.md'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+
+残りのコマンドラインリスト =
+
 ```
