@@ -295,7 +295,7 @@ miniparse がエラー発生時に出力する Usage:関連のメッセージは
 
   - printUsage(コマンド名, OpSetのインスタンス, Umode, 出力先)　</br>
   　　簡単な Usage:とかオプションリストなどを出力する。
-  
+
     - コマンド名（省略時は、デフォルトのコマンド名）
     - OpSetのインスタンス（オプション情報を定義したもの）
     - Umode
@@ -308,3 +308,115 @@ miniparse がエラー発生時に出力する Usage:関連のメッセージは
 </br>
 </br>
 
+## 区切りモード
+miniparse は、デフォルト状態ではコマンドラインを最後まで一度に解析します。そのため、コマンドライン上でコマンド引数が記述された後に入力されたオプションがあっても、先に記述されたオプションと同様に扱います。
+
+>>コマンド名　<オプション群>　<コマンド引数群>　<オプション群２>　<コマンド引数群２> ...
+
+</br>
+各オプション群、コマンド引数群を個別に扱うには、区切りモードの指定を<全部モード>以外に設定します。
+
+```
+separation_mode: Smode = Smode.WHOLE   # デフォルト
+
+    WHOLE = auto()      # 全部モード
+    EVERY = auto()      # 個別モード
+    ARG = auto()        # 引数区切りモード
+    OPT = auto()        # オプション区切りモード
+```
+
+引数区切りモード（Smode.ARG）では、各<コマンド引数群>を解析後に、オプション区切りモード（Smode.OPT）では、各<オプション群>解析後に関数 miniparese() が一旦終了します。
+個別モード（Smode.EVERY）では、各区切りごとに関数 miniparse() が一旦終了します。
+
+後続の解析を続けるには、関数 miniparse() を引数なしで再度呼び出します。
+後続の解析項目があるときは、関数 miniparse() の返り値が True、最後まで解析が終了した時は返り値が False になります。
+
+後続の解析が必要ないときは、関数 miniparse() を再度呼び出す必要はありません。
+
+未解析部分のコマンドラインは、関数 get_remainArgs() でリストとして取得できます。
+</br>
+</br>
+</br>
+</br>
+
+### コマンドラインの解析を、最初のコマンド引数群で一旦停止するサンプル
+
+```py
+    #!/usr/bin/env python3
+    # -------------------------------------------------------------
+    # miniparse 利用サンプル04
+    # コマンドラインの解析を、最初のコマンド引数群で一旦停止するサンプル
+    # -------------------------------------------------------------
+
+    import sys
+    import miniparse2 as mp
+
+
+    pm2: mp.TypeOpList = [('', False, '開始ディレクトリ'),
+                          ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                          ('e', False, '', 'ツリーの表示に拡張文字を使用'),
+                          ('h', False, '', '使い方を表示する'),
+                          ('version', False, '', 'version情報を表示する'),
+                          ]
+
+
+    mp.separation_mode = mp.Smode.ARG           # コマンド引数区切りモード
+
+    opp = mp.OpSet(pm2)
+    stillremain = mp.miniparse(opp, sys.argv)
+    ''' miniparseの呼び出し、ここまで '''
+
+    ''' オプションの取得 '''
+    # mp.printOpset(opp)
+    for op in opp.get_keys():
+        if opp.isTrue(op):
+            if len(op) == 0 and opp.get_opArg(op):
+                print('コマンド引数が入力された。', opp.get_opArg(op))
+            if len(op) == 1:
+                print(f'option -{op} が指定された。',
+                      f'オプション引数 = {opp.get_opArg(op)}' if opp.get_opArg(op) else '')
+            if len(op) > 1:
+                print(f'option --{op} が指定された。',
+                      f'オプション引数 = {opp.get_opArg(op)}' if opp.get_opArg(op) else '')
+
+    ''' コマンド引数の取得 '''
+    arglist = mp.get_arguments()
+    if arglist:
+        print()
+        print('コマンド引数リスト = ')
+        for arg in arglist:
+            print(f"  '{arg}'")
+
+    print()
+    remain_arglist = mp.get_remainArgs()
+    print('残りのコマンドラインリスト = ')
+    for arg in remain_arglist:
+        print(f"  '{arg}'")
+
+```
+
+### 出力例
+```
+mp_sample04.py -eL3 -h mp*.py -L -5 --ver *.md -L7 mi*.py
+
+コマンド引数が入力された。 ['mp_sample04.py', 'mp_sample04b.py', 'mp_sample04c.py']
+option -L が指定された。 オプション引数 = ['3']
+option -e が指定された。
+option -h が指定された。
+
+コマンド引数リスト =
+  'mp_sample04.py'
+  'mp_sample04b.py'
+  'mp_sample04c.py'
+
+残りのコマンドラインリスト =
+  '-L'
+  '5'
+  '--ver'
+  'miniparse.md'
+  'README.md'
+  '-L7'
+  'miniparse.py'
+  'miniparse2.py'
+  'miniparse_test2.py'
+```
