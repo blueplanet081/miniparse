@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-# miniparse 利用サンプル01
-# 一番シンプルなやつ
+# miniparse 利用サンプル02
+# ユーザ定義のエラーメッセージ上書き
+# エラー時、ユーザ側で処理
 # -------------------------------------------------------------
 
 import sys
 import miniparse as mp
 
-pms: mp.TypeOpList = [('', False, 'ファイル名'),
+mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
+mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
+
+pms: mp.TypeOpList = [('', True, 'ディレクトリ名'),
                       ('l', False, '', '詳細情報も表示する'),
                       ('h', False, '', '使い方を表示する'),
                       ('help', False, '', '使い方を表示する'),
                       ]
+
+
+mp.error_mode = mp.Emode.SILENT_CONT
+
 opp = mp.OpSet(pms)
 mp.miniparse(opp, sys.argv)
+
+err = mp.get_parseError()
+if err:
+    print('入力エラーです。')
+    print(mp.make_errmsg(err))
+    sys.exit(1)
+
 
 ''' miniparseの呼び出し、ここまで '''
 

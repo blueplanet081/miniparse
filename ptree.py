@@ -6,7 +6,7 @@
 import sys
 import pathlib
 from typing import List
-import miniparse2 as mp
+import miniparse as mp
 import e2_path as e2
 
 
@@ -36,7 +36,6 @@ def show_directory(path: pathlib.Path, tlist: List[int] = []):
         dispDirs = True
     else:
         dispDirs = False
-
 
     # strHeader0  そのディレクトリを表示する、左側のヘッダー
     strHeader0 = ''
@@ -88,7 +87,7 @@ def show_directory(path: pathlib.Path, tlist: List[int] = []):
 # mp.usage_mode = mp.Umode.USAGE_AND_OPTION
 # mp.error_code = 1
 
-pm2: mp.TypeOpList = [('', False, '[ディレクトリ]'),
+pms: mp.TypeOpList = [('', False, '[開始ディレクトリ]'),
                       ('a', False, '', 'ドットやシステムディレクトリも表示'),
                       ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
                       ('d', False, '', 'ディレクトリのみ表示'),
@@ -96,19 +95,9 @@ pm2: mp.TypeOpList = [('', False, '[ディレクトリ]'),
                       ('h', False, '', '使い方を表示する'),
                       ('help', False, '', '使い方を表示する'),
                       ]
-opp = mp.OpSet(pm2)
+opp = mp.OpSet(pms)
 mp.miniparse(opp, sys.argv)
 
-# ops = {'': mp.Oset(False, False, '[ディレクトリ]', ''),
-#        'a': mp.Oset(False, False, '', 'ドットやシステムディレクトリも表示'),
-#        'L': mp.Oset(False, True, '階層数', '表示するディレクトリの深さを指定する'),
-#        'd': mp.Oset(False, False, '', 'ディレクトリのみ表示'),
-#        'E': mp.Oset(False, False, '', 'ツリーの表示に拡張文字を使用'),
-#        'h': mp.Oset(False, False, '', '使い方を表示'),
-#        }
-
-# myArgs = mp.wArgs(sys.argv)
-# mp.miniparse(myArgs[1:], ops)
 
 if opp.isTrue('h') or opp.isTrue('help'):
     print('ディレクトリやファイルのツリーを表示します。')

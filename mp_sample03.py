@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-# miniparse 利用サンプル01
-# 一番シンプルなやつ
+# miniparse 利用サンプル03
+# Usage:情報、ユーザ定義
 # -------------------------------------------------------------
 
 import sys
 import miniparse as mp
 
-pms: mp.TypeOpList = [('', False, 'ファイル名'),
-                      ('l', False, '', '詳細情報も表示する'),
+mp.Eset['E0'] = "コマンドラインで、出力を開始するディレクトリを指定してください"
+mp.Eset['E1'] = "そんなオプション（ {0} ）はありません"
+
+pms: mp.TypeOpList = [('', True, '開始ディレクトリ'),
+                      ('L', True, '階層数', '表示するディレクトリの深さを指定する'),
+                      ('e', False, '', 'ツリーの表示に拡張文字を使用'),
                       ('h', False, '', '使い方を表示する'),
-                      ('help', False, '', '使い方を表示する'),
                       ]
+
+
+mp.usage_mode = mp.Umode.USER | mp.Umode.OLIST
+mp.usage_usermessage = 'Usage:  plist.py  -h | [-L<整数>] [-e] [ディレクトリ名]'
+
 opp = mp.OpSet(pms)
 mp.miniparse(opp, sys.argv)
+
 
 ''' miniparseの呼び出し、ここまで '''
 
