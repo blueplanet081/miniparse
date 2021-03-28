@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from typing import Optional
 
+
 class Turn(Enum):
     OPT = auto()    # オプション・ターン
     ARG = auto()    # 引数・ターン
